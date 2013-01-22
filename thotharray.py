@@ -407,14 +407,14 @@ class OperationProxy():
 
     def start_compute(self, name, func, param=None, suffix=None,
                       interactive=True):
-        QApplication.setOverrideCursor(QCursor(Qt.WaitCursor))
         self.QProxy.emit(SIGNAL("computing"))
         if interactive and param is not None:
             if interactive == 'text' and not param.text_edit():
                 return
             elif not param.edit():
                 return
-
+        QApplication.setOverrideCursor(QCursor(Qt.WaitCursor))
+        
         processing = name
         if suffix is not None:
             processing += " | " + suffix(param)
