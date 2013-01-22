@@ -17,7 +17,7 @@ francois.bianco@unige.ch based on numpy, guidata, guiqwt
 Copyright
 ---------
 
-Copyright © 2011 François Bianco, University of Geneva -
+Copyright © 2011–2013 François Bianco, University of Geneva -
 francois.bianco@unige.ch
 
 This program is free software: you can redistribute it and/or modify it under
