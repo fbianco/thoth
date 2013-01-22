@@ -21,7 +21,7 @@ import platform
 
 from guidata.qt.QtGui import (QMainWindow, QDockWidget, QWidget, QMdiArea,
                               QListWidget, QMessageBox )
-from guidata.qt.QtCore import (SIGNAL, QObject, Qt, QT_VERSION_STR,
+from guidata.qt.QtCore import (SIGNAL, SLOT, QObject, Qt, QT_VERSION_STR,
                                PYQT_VERSION_STR, )
 from guidata.qthelpers import create_action, add_actions
 from guiqwt.config import _
@@ -43,7 +43,7 @@ try:
         def __init__(self, parent, namespace, message, commands=[]):
             InternalShell.__init__(self, parent=parent, namespace=namespace,
                                    message=message, commands=commands,
-                                   multithreaded=True)
+                                   multithreaded=False)
             self.setup()
 
         def setup(self):
@@ -178,10 +178,20 @@ class ThothMainWindow(QMainWindow):
 
 def run():
     from guidata import qapplication
-    _app = qapplication()
-    w = ThothMainWindow(None)
+    app = qapplication()
+    w = ThothMainWindow()
+    app.connect(app, SIGNAL("lastWindowClosed()")
+                , app
+                , SLOT("quit()")
+                )
+
+    app.connect(w, SIGNAL("closed()")
+                , app
+                , SLOT("quit()")
+                )
+
     w.show()
-    _app.exec_()
+    app.exec_()
 
 if __name__ == "__main__":
     run()
