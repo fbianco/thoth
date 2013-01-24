@@ -7,6 +7,8 @@
     Copyright © 2005-8 Vladimir Likic, Uwe Schmitt
     New BSD License (python website)
     or GPL v.2 (bioinformatics)
+
+    http://code.google.com/p/pyms/
 """
 
 from math import *
