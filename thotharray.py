@@ -414,12 +414,12 @@ class OperationProxy():
             elif not param.edit():
                 return
         QApplication.setOverrideCursor(QCursor(Qt.WaitCursor))
-        
-        processing = name
-        if suffix is not None:
-            processing += " | " + suffix(param)
 
         try:
+            processing = name
+            if suffix is not None:
+                processing += " | " + suffix(param)
+
             result = Measurement()
             result.copy_param(self.measurement)
             result.set_rawdata(self.apply_func(func, param))
@@ -428,7 +428,7 @@ class OperationProxy():
             import traceback
             traceback.print_exc()
             QMessageBox.critical(None, APP_NAME,
-                                 _(u"Error:")+"\n%s" % unicode(msg))
+                                 _(u"An error occured:")+"\n%s" % unicode(msg))
             raise ComputationError, msg
         finally:
             self.QProxy.emit(SIGNAL("computing finished"))
@@ -513,6 +513,30 @@ class ThothCurveItem(CurveItem, OperationProxy):
         import scipy.signal as sps
         return self.compute(_('Linear background substracted'), sps.detrend)
 
+    def compute_scale(self, param=None, interactive=True):
+        """Multiply the curve by the given factor"""
+        class ScaleParam(DataSet):
+            factor = FloatItem(_("Scaling factor"), default=1)
+        if param is None:
+            param = ScaleParam(_("Scaling"))
+        return self.compute(_("Scaled"),
+            lambda y, p: y * p.factor,
+            param,
+            lambda p: _("factor = %.3f") % p.factor,
+            interactive)
+
+    def compute_shift(self, param=None, interactive=True):
+        """Shift the curve by the given amount"""
+        class ShiftParam(DataSet):
+            shift = FloatItem(_("Shift by"), default=1)
+        if param is None:
+            param = ShiftParam(_("Shift"))
+        return self.compute(_("Shifted"),
+            lambda y, p: y + p.shift,
+            param,
+            lambda p: _("shift = %.3f") % p.shift,
+            interactive)
+        
     def compute_savitzky(self, param=None, interactive=True):
         """Smooth or derivate data based on the Savitzky-Golay algorithm"""
         import sgfilter
@@ -522,8 +546,8 @@ class ThothCurveItem(CurveItem, OperationProxy):
             diff_order = IntItem(_("Differential order"), default=0, min=0)
         if param is None:
             param = SGParam(_("Savitzky-Golay filter"))
-        def func(x, p):
-            return sgfilter.savitzky(x, p.num_points, p.poly_degree,
+        def func(y, p):
+            return sgfilter.savitzky(y, p.num_points, p.poly_degree,
                                      p.diff_order)
         try:
             result = self.start_compute(_('Smoothed with Savitzky-Golay'),
@@ -549,6 +573,29 @@ class ThothCurveItem(CurveItem, OperationProxy):
                               lambda x: (x[1:] - x[:-1]) / increment)
         result['axis1'].length = len(result) - 1
         result['axis1'].start += increment / 2.
+        if result['type'] == 'ivcurve':
+            result['type'] = 'didvcurve'
+            result['unit'] = _('a.u.')
+        else:
+            result['type'] == 'unknowncurve'
+        return self.end_compute(result)
+
+    def compute_spline_derivative(self, param=None, interactive=True):
+        """ Compute the derivative of the curve basde on spline
+            interpolation"""
+        from scipy.interpolate import splrep, splev
+        class SplineParam(DataSet):
+            s = FloatItem(_("s"), default=0.1, min=0,
+                            help=_('''Larger s means more smoothing while
+smaller values of s indicate less smoothing. 0 is no smoothing.'''))
+        if param is None:
+            param = SplineParam(_("Spline smoothing"))
+        def func(y, p):
+            tck = splrep(arange(len(y)),y,s=p.s) # get spline coef tuple
+            return splev(arange(len(y)),tck,der=1) # compute 1st derivative
+        result = self.start_compute(_("Spline derivative"), func, param,
+                            lambda p: u"s=%i" % p.s,
+                            interactive)
         if result['type'] == 'ivcurve':
             result['type'] = 'didvcurve'
             result['unit'] = _('a.u.')
@@ -731,8 +778,8 @@ class ThothImageItem(ImageItem, OperationProxy):
         return self.compute(_('Horizontal line correction'), func)
 
     def compute_savitzky(self, param=None, interactive=True):
-        """Linewise smoothin
-        g of data based on the Savitzky-Golay algorithm"""
+        """Linewise smoothing of data based on the Savitzky-Golay
+           algorithm"""
         import sgfilter
         class SGParam(DataSet):
             num_points = IntItem(_("Number of points"), default=8, min=2)

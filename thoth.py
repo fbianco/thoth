@@ -335,9 +335,19 @@ class Thoth(QObject):
                              icon="curve.png", toolbar=True)
         compute_menu = window.menuBar().addMenu(_("&Compute"))
         compute_actions = []
+        compute_actions.append(create_action(self, _("Scale"),
+                          triggered=item.compute_scale,
+                          tip=_("Scale the curve.")))
+        compute_actions.append(create_action(self,_("Shift"),
+                          triggered=item.compute_shift,
+                          tip=_("Shift the curve")))
         compute_actions.append(create_action(self, _("&Derivative"),
                           triggered=item.compute_derivative,
                           tip=_("Compute point wise derivative of the curve.")))
+        compute_actions.append(create_action(self, _("&Spline derivative"),
+                          triggered=item.compute_spline_derivative,
+                          tip=_("""Compute the first derivative with spline
+interpolation.""")))
         compute_actions.append(create_action(self, _("&Fourier transform"),
                           triggered=item.compute_fft,
                           tip=_("Compute the Fourier transfom of the curve.")))
