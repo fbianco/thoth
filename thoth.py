@@ -155,8 +155,8 @@ class MapWindow(ImageWindow):
             try: # maybe the map has not been set
                 new_index = self.map_.get_current_index() + num_steps
                 max_index = self.map_.measurement.param.axis3.get_length()
-                if abs(new_index) >= max_index:
-                    new_index = new_index % max_index
+                if new_index > max_index:
+                    new_index = max_index
                 new_index = int(new_index)
                 self.slice_index_spin_box.setValue(new_index)
             except NameError:
