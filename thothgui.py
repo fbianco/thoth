@@ -98,6 +98,7 @@ class ThothMainWindow(QMainWindow):
 
     def add_sub_window(self, window):
         self.mdi_area.addSubWindow(window)
+        self.list_widget.addItem(window.windowTitle())
         window.show()
 
     def create_internal_console(self):
@@ -135,15 +136,27 @@ class ThothMainWindow(QMainWindow):
 
     def create_main_frame(self):
         self.mdi_area = QMdiArea()
+        self.connect( self.mdi_area,
+            SIGNAL("subWindowActivated(QMdiSubWindow)"),
+            self.update_info)
         self.setCentralWidget(self.mdi_area)
 
+    def update_info(self, window):
+        self.info_widget.clear()
+        self.info_widget.addItem(window.windowTitle())
+        
     def create_list_dock(self) :
         list_dock = QDockWidget(_('Files'))
         self.addDockWidget(Qt.RightDockWidgetArea, list_dock)
         self.list_widget = QListWidget()
-        #self.connect(list_widget, SIGNAL( "itemSelectionChanged()" ), self.changeSelection)
+        self.connect(self.list_widget,
+            SIGNAL( "currentItemChanged( QListWidgetItem, QListWidgetItem)" ),
+            self.change_selection)
         list_dock.setWidget(self.list_widget)
 
+    def change_selection(self, current, previous):
+        pass
+        
     def create_info_dock(self):
         info_dock = QDockWidget(_('Info'))
         self.addDockWidget(Qt.RightDockWidgetArea, info_dock)
