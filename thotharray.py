@@ -663,20 +663,21 @@ smaller values of s indicate less smoothing. 0 is no smoothing.'''))
         from guiqwt.fit import FitParam, FitDialog
         import bcs
         from numpy import sum
-        #gap = 1.28 # in meV, value for NbSe_2 # FIXME should be a free param
         def fit(x, param):
             return bcs.BCS(param[1], param[0], x)
 
-        T = FitParam("Temperature", 2., 0., 20.)
-        gap = FitParam("Gap", 0.5, 1.28, 10)
+        T = FitParam("Temperature [K]", 2, 0.1, 20)
+        gap = FitParam("Gap [meV]", 1.28, 1, 10) # in meV, value for NbSe_2
         params = [T,gap]
 
         x, y = self.get_data()
-        normalisation_range = y[15:25]
+        # FIXME : not a very good way to proceed
+        # Normalize with 20 point from the left of the curve
+        normalisation_range = y[:20]
         normalisation = sum(normalisation_range) / len(normalisation_range)
         y = y / normalisation
         #values = guifit(x, y, fit, params, auto_fit=True)
-        win = FitDialog(edit=True, wintitle=None, toolbar=True,
+        win = FitDialog(edit=True, wintitle='BCS fitting', toolbar=True,
                 param_cols=1, auto_fit=True,
                 options=dict(title="BCS", xlabel="Energy", ylabel="DOS"))
         win.set_data(x, y, fit, params, fitargs=None, fitkwargs=None)

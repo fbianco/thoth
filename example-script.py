@@ -10,6 +10,8 @@ from os import listdir, chdir
 
 from thoth import Thoth
 
+PREVIEW = True
+
 def main():
     # create measurement manager
     thoth = Thoth()
@@ -32,7 +34,10 @@ def main():
     param = Param()
     didv = average.compute_savitzky(param, interactive=False)
     didv_smoothed = didv.compute_wiener()
-    #thoth.create_window(didv_smoothed)
+
+    if PREVIEW:
+        thoth.create_window(didv_smoothed)
+        thoth.create_window(average)
     fit = didv_smoothed.fit_bcs()
     print fit.get_values()
 
