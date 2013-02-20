@@ -82,29 +82,39 @@ class WeightTool(ImageStatsTool):
         self.action.setEnabled(False)
         return annotation, 0, 2
 
-class ExtractCurveTool(SelectPointTool):
+class ExtractCurveTool(AnnotatedPointTool):
     TITLE = _("Curve extraction")
     ICON = "point_selection.png"
     MARKER_STYLE_SECT = "plot"
-    MARKER_STYLE_KEY = "marker/curve"
+    #MARKER_STYLE_KEY = "marker/curve"
     CURSOR = Qt.PointingHandCursor
 
-    def __init__(self, manager, mode="create", on_active_item=False,
-                 title=None, icon=None, tip=None, end_callback=None,
-                 toolbar_id=DefaultToolbarID, marker_style=None):
-        SelectPointTool.__init__(self, manager, mode=mode,
-                                on_active_item=on_active_item,
-                                title=title, icon=icon, tip=tip,
-                                end_callback=self.extract_curve,
-                                toolbar_id=toolbar_id,
-                                marker_style=marker_style)
+    def __init__(self, manager, setup_shape_cb=None,
+    handle_final_shape_cb=None, shape_style=None,
+    toolbar_id=DefaultToolbarID, title=None, icon=None, tip=None,
+    switch_to_default_tool=None):
+        AnnotatedPointTool.__init__(self, manager=manager, setup_shape_cb=setup_shape_cb,
+        handle_final_shape_cb=self.extract_curve, shape_style=shape_style,
+        toolbar_id=toolbar_id, title=title, icon=icon, tip=tip
+        )
+    #def __init__(self, manager, mode="create", on_active_item=False,
+                 #title=None, icon=None, tip=None, end_callback=None,
+                 #toolbar_id=DefaultToolbarID, marker_style=None):
+        #SelectPointTool.__init__(self, manager, mode=mode,
+                                #on_active_item=on_active_item,
+                                #title=title, icon=icon, tip=tip,
+                                #end_callback=self.extract_curve,
+                                #toolbar_id=toolbar_id,
+                                #marker_style=marker_style)
 
-    def extract_curve(self, x):
-        active = self.get_active_plot().get_active_item(force=True)
-        if not isinstance(active, ThothMapItem):
-            return
-        active.compute_get_curve_at_position(*self.get_coordinates())
-
+    def extract_curve(self, shape):
+        for item in self.get_active_plot().get_items():
+            if isinstance(item, ThothMapItem):
+                try:
+                    item.compute_get_curve_at_position(*shape.get_pos())
+                except IndexError:
+                    print _("Outside of image bound.")
+                break
 
 def create_action(parent, title, triggered=None, toggled=None,
                   shortcut=None, icon=None, tip=None, checkable=None,
@@ -384,6 +394,14 @@ interpolation.""")))
                         xunit=xunit, yunit=yunit)
         plot.add_item(item)
         return window
+
+    def create_multi_curves_window(self, items):
+        if not isinstance(items, (tuple, list)):
+            return
+        window = self._create_curve_window(items[0])
+        for item in items[1:]:
+            plot = window.get_plot()
+            plot.add_item(item)
 
     def _create_image_window(self, item):
         window = ImageWindow(wintitle=item.measurement.param.filename,

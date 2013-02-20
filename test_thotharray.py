@@ -867,10 +867,6 @@ class CheckThothMapItem(unittest.TestCase):
         self.assertRaises(IndexError, map_.get_curve_at_index, 12, 14, 3, 2)
         self.assertRaises(IndexError, map_.get_curve_at_index, -1, -1, 3, 2)
 
-    def test_get_curve_at_position(self):
-        #get_curve_at_position
-        raise Exception, "test not implementend"
-
     def test_computation_function(self):
         map_ = create_test_map()
         for func in (map_.compute_fft,

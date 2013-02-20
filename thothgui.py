@@ -125,14 +125,12 @@ class ThothMainWindow(QMainWindow):
 
     def about(self):
         QMessageBox.about( self, _("About ")+APP_NAME,
-              """<b>%s</b> v%s<br>%s<p>%s Pierre Raybaut
+              """<b>%s</b> v%s<br>%s<p>
               <br>Copyright © François Bianco, University of Geneva
               <br>francois.bianco@unige.ch
               <br>Distributed under the GNU GPL License v.3
-              <p>Python %s, Qt %s, PyQt %s %s %s""" % \
-              (APP_NAME, VERSION, APP_DESC, _("Developped by"),
-               platform.python_version(),
-               QT_VERSION_STR, PYQT_VERSION_STR, _("on"), platform.system()) )
+              """ % \
+              (APP_NAME, VERSION, APP_DESC))
 
     def create_main_frame(self):
         self.mdi_area = QMdiArea()
@@ -144,7 +142,7 @@ class ThothMainWindow(QMainWindow):
     def update_info(self, window):
         self.info_widget.clear()
         self.info_widget.addItem(window.windowTitle())
-        
+
     def create_list_dock(self) :
         list_dock = QDockWidget(_('Files'))
         self.addDockWidget(Qt.RightDockWidgetArea, list_dock)
@@ -156,7 +154,7 @@ class ThothMainWindow(QMainWindow):
 
     def change_selection(self, current, previous):
         pass
-        
+
     def create_info_dock(self):
         info_dock = QDockWidget(_('Info'))
         self.addDockWidget(Qt.RightDockWidgetArea, info_dock)

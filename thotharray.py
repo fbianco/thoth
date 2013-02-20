@@ -37,6 +37,7 @@ from guiqwt.image import CurveItem, ImageItem
 from guiqwt.styles import CurveParam, ImageParam
 from guiqwt.config import _
 
+
 APP_NAME = 'Thoth'
 
 class AxisParam(DataSet):
@@ -83,7 +84,7 @@ class AxisParam(DataSet):
     def __getitem__(self, key):
         if 'physical length' == key:
             return self.get_physical_length()
-        if 'length':
+        elif 'length' == key:
             return self.get_length()
         elif 'scale' == key:
             return self.get_scale()
@@ -536,7 +537,7 @@ class ThothCurveItem(CurveItem, OperationProxy):
             param,
             lambda p: _("shift = %.3f") % p.shift,
             interactive)
-        
+
     def compute_savitzky(self, param=None, interactive=True):
         """Smooth or derivate data based on the Savitzky-Golay algorithm"""
         import sgfilter
@@ -713,7 +714,7 @@ class ThothImageItem(ImageItem, OperationProxy):
           return image levels (np.ndarray) in rectangular area (x0,y0,x1,y1)
         """
         if x1 is None or y1 is None:
-            i0, j0 = self.get_closest_indexes(x0, y0)
+            i0, j0 = self.get_closest_pixel_indexes(x0, y0)
             return self.data[j0, i0]
         else:
             i0, j0, i1, j1 = self.get_closest_index_rect(x0, y0, x1, y1)
@@ -893,7 +894,7 @@ class ThothMapItem(ImageItem, OperationProxy):
           return image levels (np.ndarray) in rectangular area (x0,y0,x1,y1)
         """
         if x1 is None or y1 is None:
-            i0, j0 = self.get_closest_indexes(x0, y0)
+            i0, j0 = self.get_closest_pixel_indexes(x0, y0)
             return self.data[j0, i0]
         else:
             i0, j0, i1, j1 = self.get_closest_index_rect(x0, y0, x1, y1)
@@ -1001,16 +1002,17 @@ class ThothMapItem(ImageItem, OperationProxy):
     def get_curve_at_position(self, x0, y0, x1=None, y1=None):
         if x1 is None and y1 is None:
             return self.get_curve_at_index(
-                                *self.get_closest_indexes(x0, y0))
+                                *self.get_closest_pixel_indexes(x0, y0))
         else:
-            i0, j0 = self.get_closest_indexes(x0, y0)
-            i1, j1 = self.get_closest_indexes(x1, y1)
+            i0, j0 = self.get_closest_pixel_indexes(x0, y0)
+            i1, j1 = self.get_closest_pixel_indexes(x1, y1)
             return self.get_curve_at_index(i0, j0, i1, j1)
 
     def get_curve_at_index(self, i0, j0, i1=None, j1=None):
         """
         Return the curve across the slices at the give pixel coordinates.
-        If two points are specified, the averaged curve is returned.
+        If two points are specified, the averaged curve is returned within
+        the selected area.
         """
         maxx, maxy, maxz = self.measurement.rawdata.shape
         if not ( 0 <= i0 < maxx and 0 <= j0 < maxy ):
@@ -1020,8 +1022,8 @@ class ThothMapItem(ImageItem, OperationProxy):
 
         # FIXME set it as a standard compute function
         #result = self.start_compute('Extract curve ', lambda x, p: x[:, j0, i0],
-                                    #param=
-                                    #suffix=lambda
+        #param=
+        #suffix=lambda
 
         new_param = self.measurement.param.copy()
         if new_param.type == 'didvmap':
