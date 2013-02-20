@@ -99,6 +99,6 @@ class FlatFileProxy(object):
             axisv.start = dataArray.info['vstart'] * coef
 
         return Measurement(data, param)
-        
+
 if __name__ == "__main__":
     pass

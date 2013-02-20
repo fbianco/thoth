@@ -29,10 +29,19 @@ TEST_FF_TOPO = 'testfiles/flatfile/topo.flat'
 TEST_FF_IV = 'testfiles/flatfile/iv.flat'
 TEST_FF_MAP = 'testfiles/flatfile/grid.flat'
 
+testfiles = [TEST_FF_TOPO, TEST_FF_IV,
+'testfiles/flatfile/topo_matrix3-1.flat',
+'testfiles/flatfile/iv_matrix3-1.flat']
+
 class CheckFlatFileProxy(unittest.TestCase):
 
     def setUp(self):
         ffp = None
+
+    def test_parse_files(self):
+        ffp = FlatFileProxy()
+        for f in testfiles:
+            ffp.open(f)
 
     def test_get_measurements(self):
         ffp = FlatFileProxy()

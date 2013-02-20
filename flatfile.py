@@ -34,6 +34,8 @@
 
     \section Updates
 
+    2013-01 fbianco:
+        added support for Matrix 3.1-1 which breaks the axis keys naming
     2011-11 fbianco:
         restructuring code
     2011-08-05 fbianco:
@@ -97,6 +99,24 @@ class FlatFile():
 
         self.filename = filename
         self.data = [] # List containing data of DataArray type
+
+        # Define the keys in dictionary since they are version dependant
+        # since the Matrix 3.1
+        # FIXME complete the list and correct the rest of the file parser
+        self.axis_keys = {}
+        self.axis_keys['MATRIX V3.1-1'] = {
+            'V': 'Default::Spectroscopy::V',
+            'X': 'Default::XYScanner::X',
+            'Y': 'Default::XYScanner::Y',
+            }
+        self.axis_keys['MATRIX V3.0'] = {
+            'V': 'V',
+            'X': 'X',
+            'Y': 'Y',
+            }
+        # Use V3.0 as fall-back value since it worked out up to V3.1
+        self.axis_keys['fall-back'] = self.axis_keys['MATRIX V3.0']
+
         self.openFlatFile()
 
     def openFlatFile(self):
@@ -292,6 +312,15 @@ class FlatFile():
         self.experimentInfo['Scan Cycle'] = self._readInt()
 
         #
+        # Select axis keys from the Matrix version
+        #
+        if self.experimentInfo['Result File Creator'] in self.axis_keys.keys():
+            self.axis_keys = self.axis_keys[
+                self.experimentInfo['Result File Creator']]
+        else:
+            self.axis_keys = self.axis_keys['fall-back']
+
+        #
         # Experiment Element Parameter List
         #
         elementsCount = self._readInt()
@@ -407,26 +436,26 @@ class FlatFile():
 
         if self.isTopography():
 
-            sizeX = int(self.axis['X']['clockCount']/(self.axis['X']['mirrored']+1))
-            sizeY = int(self.axis['Y']['clockCount']/(self.axis['Y']['mirrored']+1))
+            sizeX = int(self.axis[self.axis_keys['X']]['clockCount']/(self.axis[self.axis_keys['X']]['mirrored']+1))
+            sizeY = int(self.axis[self.axis_keys['Y']]['clockCount']/(self.axis[self.axis_keys['Y']]['mirrored']+1))
 
             info.update({
                 'type' : 'topo',
                 'xres' : sizeX,
                 'yres' : sizeY,
-                'xinc' : self.axis['X']['incrementPhysical'] * 1e9,
-                'yinc' : self.axis['Y']['incrementPhysical'] * 1e9,
-                'xreal' : self.axis['X']['incrementPhysical'] * sizeX * 1e9,
-                'yreal' : self.axis['Y']['incrementPhysical'] * sizeY * 1e9,
+                'xinc' : self.axis[self.axis_keys['X']]['incrementPhysical'] * 1e9,
+                'yinc' : self.axis[self.axis_keys['Y']]['incrementPhysical'] * 1e9,
+                'xreal' : self.axis[self.axis_keys['X']]['incrementPhysical'] * sizeX * 1e9,
+                'yreal' : self.axis[self.axis_keys['Y']]['incrementPhysical'] * sizeY * 1e9,
                 'unitxy' : 'nm',
                 })
 
-            self.rawData.resize( sizeY*(self.axis['Y']['mirrored']+1), sizeX*(self.axis['X']['mirrored']+1) )
+            self.rawData.resize( sizeY*(self.axis[self.axis_keys['Y']]['mirrored']+1), sizeX*(self.axis[self.axis_keys['X']]['mirrored']+1) )
 
             # Both axis are mirrored
             # 4 images : up-fwd, up-bwd, down-fwd, down-bwd
             # Note on array syntax [start:stop:increment]
-            if self.axis['X']['mirrored'] and self.axis['Y']['mirrored'] :
+            if self.axis[self.axis_keys['X']]['mirrored'] and self.axis[self.axis_keys['Y']]['mirrored'] :
                 info['direction'] = 'up-fwd'
                 self.data.append(DataArray(self.rawData[ 0:sizeY, 0:sizeX], info))
                 info['direction'] = 'up-bwd'
@@ -438,7 +467,7 @@ class FlatFile():
 
             # Only X is mirrored
             # 2 images up : fwd and bwd
-            elif self.axis['X']['mirrored'] :
+            elif self.axis[self.axis_keys['X']]['mirrored'] :
                 if DEBUG : print 'Only X is mirrored'
                 info['direction'] = 'up-fwd'
                 self.data.append(DataArray(self.rawData[ :,0:sizeX], info))
@@ -447,7 +476,7 @@ class FlatFile():
 
             # Only Y is mirrored
             # 2 images fwd : up and down
-            elif self.axis['Y']['mirrored'] :
+            elif self.axis[self.axis_keys['Y']]['mirrored'] :
                 info['direction'] = 'up-fwd'
                 self.data.append(DataArray(self.rawData[ 0:sizeY,:], info))
                 info['direction'] = 'down-fwd'
@@ -460,20 +489,20 @@ class FlatFile():
 
         elif self.isVPointSpectroscopy():
 
-            sizeV = self.axis['V']['clockCount']/(self.axis['V']['mirrored']+1)
+            sizeV = self.axis[self.axis_keys['V']]['clockCount']/(self.axis[self.axis_keys['V']]['mirrored']+1)
 
             info.update({
                 'type' : 'ivcurve',
                 'vres' : sizeV,
-                'vstart' : self.axis['V']['startValuePhysical'],
-                'vinc' : self.axis['V']['incrementPhysical'],
-                'vreal' : sizeV * self.axis['V']['incrementPhysical'],
-                'unitv' : self.axis['V']['unit'],
+                'vstart' : self.axis[self.axis_keys['V']]['startValuePhysical'],
+                'vinc' : self.axis[self.axis_keys['V']]['incrementPhysical'],
+                'vreal' : sizeV * self.axis[self.axis_keys['V']]['incrementPhysical'],
+                'unitv' : self.axis[self.axis_keys['V']]['unit'],
                 })
 
             info['direction'] = 'fwd'
             self.data.append(DataArray(self.rawData[:sizeV], info))
-            if self.axis['V']['mirrored']:
+            if self.axis[self.axis_keys['V']]['mirrored']:
                 info['direction'] = 'bwd'
                 self.data.append(DataArray(self.rawData[:sizeV-1:-1], info))
 
@@ -486,39 +515,39 @@ class FlatFile():
 
         elif self.isGridSpectroscopy():
 
-            infoX = self.axis['V']['tableSets']['X'][0]
-            infoY = self.axis['V']['tableSets']['Y'][0]
+            infoX = self.axis[self.axis_keys['V']]['tableSets'][self.axis_keys['X']][0]
+            infoY = self.axis[self.axis_keys['V']]['tableSets'][self.axis_keys['Y']][0]
 
             # this are already the sizes of the sub-images
             # i.e we do not need to divide them for mirrored images
             sizeX = (infoX['stop']-infoX['start'])/infoX['step']+1
             sizeY = (infoY['stop']-infoY['start'])/infoY['step']+1
 
-            mirroredV = self.axis['V']['mirrored']
-            sizeV = self.axis['V']['clockCount']/(mirroredV+1)
+            mirroredV = self.axis[self.axis_keys['V']]['mirrored']
+            sizeV = self.axis[self.axis_keys['V']]['clockCount']/(mirroredV+1)
 
             # Find out if I(V) are measured on bwd and fwd scan (==mirrored)
-            mirroredX = len(self.axis['V']['tableSets']['X'])==2
-            mirroredY = len(self.axis['V']['tableSets']['Y'])==2
+            mirroredX = len(self.axis[self.axis_keys['V']]['tableSets'][self.axis_keys['X']])==2
+            mirroredY = len(self.axis[self.axis_keys['V']]['tableSets'][self.axis_keys['Y']])==2
 
             # If I(V) are measured on bwd and fwd, the axis should be mirrored
-            if ( mirroredX and not self.axis['X']['mirrored'] ) or ( mirroredY and not self.axis['Y']['mirrored']):
+            if ( mirroredX and not self.axis[self.axis_keys['X']]['mirrored'] ) or ( mirroredY and not self.axis[self.axis_keys['Y']]['mirrored']):
                 raise UnhandledDataType, "The file %s has an unknown structure" % filename
 
             info.update({
                 'type' : 'ivmap',
                 'xres' : sizeX,
                 'yres' : sizeY,
-                'xinc' : self.axis['X']['incrementPhysical'] * 1e9,
-                'yinc' : self.axis['Y']['incrementPhysical'] * 1e9,
-                'xreal' : self.axis['X']['incrementPhysical'] * sizeX * 1e9,
-                'yreal' : self.axis['Y']['incrementPhysical'] * sizeY * 1e9,
+                'xinc' : self.axis[self.axis_keys['X']]['incrementPhysical'] * 1e9,
+                'yinc' : self.axis[self.axis_keys['Y']]['incrementPhysical'] * 1e9,
+                'xreal' : self.axis[self.axis_keys['X']]['incrementPhysical'] * sizeX * 1e9,
+                'yreal' : self.axis[self.axis_keys['Y']]['incrementPhysical'] * sizeY * 1e9,
                 'unitxy' : 'nm',
                 'vres' : sizeV,
-                'vstart' : self.axis['V']['startValuePhysical'],
-                'vinc' : self.axis['V']['incrementPhysical'],
-                'vreal' : sizeV * self.axis['V']['incrementPhysical'],
-                'unitv' : self.axis['V']['unit'],
+                'vstart' : self.axis[self.axis_keys['V']]['startValuePhysical'],
+                'vinc' : self.axis[self.axis_keys['V']]['incrementPhysical'],
+                'vreal' : sizeV * self.axis[self.axis_keys['V']]['incrementPhysical'],
+                'unitv' : self.axis[self.axis_keys['V']]['unit'],
             })
             dataTemp = copy(self.rawData) # copy() .... huge memory impact
             dataTemp.resize( sizeX*(mirroredX+1)*sizeY*(mirroredY+1),
@@ -610,11 +639,13 @@ class FlatFile():
                     self.data.append(DataArray(dataTempMirrored, info))
 
         else :
+            if DEBUG:
+                print self.axis
             raise UnhandledDataType, "The data file %s has an unhandled type." % self.filename
 
     def isTopography(self):
         """ Return True if the file represents a topography image with X and Y axes. """
-        if self.dimension == 2 and 'X' in self.axis and 'Y' in self.axis:
+        if self.dimension == 2 and self.axis_keys['X'] in self.axis and self.axis_keys['Y'] in self.axis:
             return True
         else:
             return False
@@ -622,7 +653,7 @@ class FlatFile():
     def isVPointSpectroscopy(self):
         """ Return True if the file represents a point spectroscopy. """
 
-        if self.dimension == 1 and 'V' in self.axis:
+        if self.dimension == 1 and self.axis_keys['V'] in self.axis:
             return True
         else:
             return False
