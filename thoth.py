@@ -63,6 +63,7 @@ from guiqwt.builder import make
 
 from thotharray import *
 from flatfileproxy import FlatFileProxy
+from nanonisfileproxy import NanonisFileProxy
 
 class Weight(ImageStatsRectangle):
 
@@ -235,6 +236,7 @@ class MapWindow(ImageWindow):
 class Thoth(QObject):
 
     ffp = FlatFileProxy()
+    nfp = NanonisFileProxy()
     opp = OperationProxy()
 
     def __init__(self, parent=None):
@@ -268,10 +270,15 @@ class Thoth(QObject):
             if re.match('.*flat$', fname):
                 self.ffp.open(fname)
                 measurements = self.ffp.get_measurements()
-                for i in range(len(measurements)):
-                    self.register_measurement(measurements.pop())
+            elif re.match('.*\.sxm$', fname):
+                self.nfp.open(fname)
+                measurements = self.nfp.get_measurements()
             else:
+                measurements = []
                 print "Unknown file type"
+                
+            for i in range(len(measurements)):
+                self.register_measurement(measurements.pop())
 
     def get_items(self):
         return self.items
