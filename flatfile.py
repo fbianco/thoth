@@ -88,10 +88,8 @@ class DataArray():
         self.info = info.copy() # a simple dictionary
 
 class FlatFile():
-    """ The FlatFile class is able to parse the Omicron Flat File Format.
-
-        It can display, smooth the data. Since the class is derived from
-        numpy.array objects can be added and averaged like normal array.
+    """ The FlatFile class is able to parse the
+        Omicron Flat File Format.
     """
 
     def __init__(self, filename):
@@ -101,7 +99,7 @@ class FlatFile():
         self.data = [] # List containing data of DataArray type
 
         # Define the keys in dictionary since they are version dependant
-        # since the Matrix 3.1
+        # since the Matrix v3.1
         # FIXME complete the list and correct the rest of the file parser
         self.axis_keys = {}
         self.axis_keys['MATRIX V3.1-1'] = {
