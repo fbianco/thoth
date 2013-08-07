@@ -70,8 +70,7 @@ class Weight(ImageStatsRectangle):
     def get_infos(self):
         if self.image_item is not None:
             x, y, z = self.image_item.get_data(*self.get_rect())
-            result = sum(z) * self.image_item['axis1']['increment'] * \
-                              self.image_item['axis2']['increment']
+            result = sum(z)
             return _(u"Weight:") + u" %.3g" % result
 
 class WeightTool(ImageStatsTool):
