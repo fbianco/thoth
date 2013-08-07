@@ -32,8 +32,6 @@ from pylab import *
 import os.path
 import re
 
-from thotharray import Measurement, ScanningParam, AxisParam
-
 DEBUG = False
 
 
