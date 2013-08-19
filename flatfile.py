@@ -55,7 +55,7 @@ import datetime
 from pylab import *
 import os.path
 
-DEBUG = False
+DEBUG = True
 
 class Error(Exception):
     """Base class for exceptions in this module. """
@@ -100,7 +100,13 @@ class FlatFile():
 
         # Define the keys in dictionary since they are version dependant
         # since the Matrix v3.1
+        #
         # FIXME complete the list and correct the rest of the file parser
+        #
+        # Note we first use a dictionary of dictionary, then we override it
+        # by the correct sub-dictionary, this was the faster to make the code
+        # compatible with the breaking change of Matrix v3.1.
+        #
         self.axis_keys = {}
         self.axis_keys['MATRIX V3.1-1'] = {
             'V': 'Default::Spectroscopy::V',
@@ -312,10 +318,18 @@ class FlatFile():
         #
         # Select axis keys from the Matrix version
         #
+        if DEBUG:
+            print 'File creator', self.experimentInfo['Result File Creator']
         if self.experimentInfo['Result File Creator'] in self.axis_keys.keys():
             self.axis_keys = self.axis_keys[
                 self.experimentInfo['Result File Creator']]
         else:
+            print 'WARNING: Missing axis key for %s,' \
+                    % self.experimentInfo['Result File Creator']
+            print 'trying fall-back values.'
+            print ''
+            print 'If the data file does not load, add a new axis keys'
+            print 'dictionary in the source code.'
             self.axis_keys = self.axis_keys['fall-back']
 
         #
@@ -518,8 +532,8 @@ class FlatFile():
 
             # this are already the sizes of the sub-images
             # i.e we do not need to divide them for mirrored images
-            sizeX = (infoX['stop']-infoX['start'])/infoX['step']+1
-            sizeY = (infoY['stop']-infoY['start'])/infoY['step']+1
+            sizeX = (infoX['stop']-infoX['start'])//infoX['step']+1
+            sizeY = (infoY['stop']-infoY['start'])//infoY['step']+1
 
             mirroredV = self.axis[self.axis_keys['V']]['mirrored']
             sizeV = self.axis[self.axis_keys['V']]['clockCount']/(mirroredV+1)
@@ -547,7 +561,7 @@ class FlatFile():
                 'vreal' : sizeV * self.axis[self.axis_keys['V']]['incrementPhysical'],
                 'unitv' : self.axis[self.axis_keys['V']]['unit'],
             })
-            dataTemp = copy(self.rawData) # copy() .... huge memory impact
+            dataTemp = copy(self.rawData) # FIXME copy() .... this has huge memory impact
             dataTemp.resize( sizeX*(mirroredX+1)*sizeY*(mirroredY+1),
                              sizeV*(mirroredV+1) ) # each line is a spect. curve
             dataTemp = transpose(dataTemp) # each column is a spectroscopy curve
@@ -556,7 +570,6 @@ class FlatFile():
             if mirroredV:
                 dataTempMirrored = copy(dataTemp[:sizeV-1:-1,:]) # Reverse order of mirrored data
                 dataTemp = copy(dataTemp[:sizeV,:])
-
 
             dataTemp = resize(dataTemp, ( sizeV,
                              sizeY*(mirroredY+1),
@@ -659,7 +672,7 @@ class FlatFile():
     def isZPointSpectroscopy(self):
         """ Return True if the file represents a Z spectroscopy. """
 
-        if self.dimension == 1 and 'Z' in self.axis:
+        if self.dimension == 1 and self.axis_keys['Z'] in self.axis:
             return True
         else:
             return False
@@ -668,7 +681,10 @@ class FlatFile():
     def isGridSpectroscopy(self):
         """ Return True if the file represents a grid spectroscopy. """
 
-        if self.dimension == 3 and 'X' in self.axis and 'Y' in self.axis and 'V' in self.axis:
+        if self.dimension == 3 and \
+           self.axis_keys['X'] in self.axis and \
+           self.axis_keys['Y'] in self.axis and \
+           self.axis_keys['V'] in self.axis:
             return True
         else:
             return False
